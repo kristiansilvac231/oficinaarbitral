@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  JUEZ
+  USUARIO
+}
+
+enum EstadoCausa {
+  EN_TRAMITACION
+  EN_REMATE
+  TERMINADA
+  SUSPENDIDA
+  VENCIDA
+}
+
+enum EstadoComparendo {
+  PROGRAMADO
+  REALIZADO
+  SUSPENDIDO
+  CANCELADO
+}
+
+enum TipoDocumento {
+  ACTA
+  BORRADOR_RESOLUCION
+  RESOLUCION
+  PRUEBA
+  PERICIA
+  OTRO
+}
+
+enum RolEnCausa {
+  COMUNERO
+  HEREDERO
+  REPRESENTANTE_LEGAL
+  PERITO
+  CORREDOR
+}
+
+model User {
+  id           String   @id @default(cuid())
+  nombre       String
+  email        String   @unique
+  passwordHash String?
+  role         Role     @default(USUARIO)
+  telefono     String?
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  causasComoJuez   Causa[]        @relation("JuezCausa")
+  partesEnCausas   ParteCausa[]
+  documentosSubidos Documento[]   @relation("DocumentoSubidoPor")
+  notificaciones   Notificacion[]
+  sesiones         Session[]
+  cuentas          Account[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Causa {
+  id              String      @id @default(cuid())
+  numeroCausa     String      @unique
+  titulo          String
+  tipoComunidad   String      // "Herencia", "Sociedad Conyugal", "Copropiedad", etc.
+  fechaDesignacion DateTime
+  fechaLimiteLegal DateTime   // designacion + 2 años
+  estado          EstadoCausa @default(EN_TRAMITACION)
+  observaciones   String?     @db.Text
+  juezId          String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  juez          User           @relation("JuezCausa", fields: [juezId], references: [id])
+  partes        ParteCausa[]
+  comparendos   Comparendo[]
+  documentos    Documento[]
+  notificaciones Notificacion[]
+  bitacora      BitacoraEvento[]
+
+  @@map("causas")
+}
+
+model ParteCausa {
+  id         String     @id @default(cuid())
+  userId     String
+  causaId    String
+  rolEnCausa RolEnCausa
+  activo     Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  causa Causa @relation(fields: [causaId], references: [id])
+
+  @@unique([userId, causaId])
+  @@map("partes_causa")
+}
+
+model Comparendo {
+  id          String           @id @default(cuid())
+  causaId     String
+  titulo      String
+  fecha       DateTime
+  linkZoom    String?
+  estado      EstadoComparendo @default(PROGRAMADO)
+  notaPrevia  String?          @db.Text
+  actaId      String?          @unique
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  causa Causa      @relation(fields: [causaId], references: [id])
+  acta  Documento? @relation(fields: [actaId], references: [id])
+
+  @@map("comparendos")
+}
+
+model Documento {
+  id            String        @id @default(cuid())
+  causaId       String
+  nombre        String
+  storageKey    String        // path en el proveedor de almacenamiento
+  tipo          TipoDocumento
+  descripcion   String?
+  subidoPorId   String
+  publico       Boolean       @default(false) // visible para las partes
+  createdAt     DateTime      @default(now())
+
+  causa       Causa        @relation(fields: [causaId], references: [id])
+  subidoPor   User         @relation("DocumentoSubidoPor", fields: [subidoPorId], references: [id])
+  comparendo  Comparendo?
+
+  @@map("documentos")
+}
+
+model Notificacion {
+  id        String   @id @default(cuid())
+  userId    String
+  causaId   String?
+  mensaje   String
+  leida     Boolean  @default(false)
+  url       String?  // deep link al recurso relacionado
+  createdAt DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id])
+  causa Causa? @relation(fields: [causaId], references: [id])
+
+  @@map("notificaciones")
+}
+
+model BitacoraEvento {
+  id        String   @id @default(cuid())
+  causaId   String
+  actorId   String?  // null si es acción del sistema
+  accion    String
+  detalle   String?
+  createdAt DateTime @default(now())
+
+  causa Causa @relation(fields: [causaId], references: [id])
+
+  @@map("bitacora_eventos")
+}
