@@ -12,7 +12,7 @@ const siteLinks = [
   { href: '/servicios', label: 'Servicios' },
   { href: '/para-jueces-arbitros', label: 'Para jueces árbitros' },
   { href: '/para-comuneros-herederos', label: 'Para comuneros y herederos' },
-  { href: '/precios', label: 'Planes y precios' },
+  { href: '/planes', label: 'Planes' },
   { href: '/preguntas-frecuentes', label: 'Preguntas frecuentes' },
   { href: '/nosotros', label: 'Sobre nosotros' },
   { href: '/blog', label: 'Blog jurídico' },

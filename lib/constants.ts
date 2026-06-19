@@ -177,7 +177,7 @@ export const NAV_LINKS = [
   { href: '/que-es-un-juicio-arbitral', label: '¿Qué es?' },
   { href: '/servicios', label: 'Servicios' },
   { href: '/para-jueces-arbitros', label: 'Para Jueces' },
-  { href: '/precios', label: 'Precios' },
+  { href: '/planes', label: 'Planes' },
   { href: '/blog', label: 'Blog' },
   { href: '/contacto', label: 'Contacto' },
 ]

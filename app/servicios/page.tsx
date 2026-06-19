@@ -176,7 +176,7 @@ export default function ServiciosPage() {
         description="Cada causa tiene sus particularidades. Cuéntenos los antecedentes y le explicamos cómo adaptamos nuestros servicios a su situación."
         primaryHref="/contacto"
         primaryLabel="Solicitar información"
-        secondaryHref="/precios"
+        secondaryHref="/planes"
         secondaryLabel="Ver planes y precios"
       />
     </>

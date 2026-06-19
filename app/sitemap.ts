@@ -28,7 +28,7 @@ const staticRoutes: Array<{
     changeFrequency: 'monthly',
     priority: 0.8,
   },
-  { url: '/precios', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
+  { url: '/planes', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
   {
     url: '/preguntas-frecuentes',
     lastModified: new Date(),

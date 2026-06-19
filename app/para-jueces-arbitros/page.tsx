@@ -208,7 +208,7 @@ export default function ParaJuecesArbitrosPage() {
         description="Contáctenos hoy. Evaluamos juntos cómo podemos colaborar en su causa o en su cartera de causas."
         primaryHref="/contacto"
         primaryLabel="Solicitar información"
-        secondaryHref="/precios"
+        secondaryHref="/planes"
         secondaryLabel="Ver planes y precios"
       />
     </>

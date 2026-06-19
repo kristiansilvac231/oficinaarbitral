@@ -317,7 +317,7 @@ export default function HomePage() {
         description="Contáctenos hoy y cuéntenos los antecedentes. Le explicaremos cómo podemos colaborar en su causa."
         primaryHref="/contacto"
         primaryLabel="Solicitar información"
-        secondaryHref="/precios"
+        secondaryHref="/planes"
         secondaryLabel="Ver planes y precios"
       />
     </>
