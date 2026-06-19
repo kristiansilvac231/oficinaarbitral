@@ -1,13 +1,13 @@
 'use client'
 
-import { useActionState, useRef, useEffect } from 'react'
-import { enviarContacto } from '@/app/actions/contacto'
+import { useState, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { ContactFormState } from '@/types'
+
+const FORMSPREE_ID = process.env.NEXT_PUBLIC_FORMSPREE_FORM_ID
 
 const CALIDADES = [
   'Juez Árbitro',
@@ -17,42 +17,60 @@ const CALIDADES = [
   'Otro',
 ]
 
+type Status = 'idle' | 'loading' | 'success' | 'error'
+
 export function ContactForm() {
-  const [state, formAction, isPending] = useActionState<ContactFormState, FormData>(
-    enviarContacto,
-    null,
-  )
+  const [status, setStatus] = useState<Status>('idle')
   const formRef = useRef<HTMLFormElement>(null)
 
-  useEffect(() => {
-    if (state?.success) {
-      formRef.current?.reset()
-    }
-  }, [state])
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
 
-  const fieldError = (name: string) =>
-    state && !state.success ? state.fieldErrors?.[name]?.[0] : undefined
+    if (!FORMSPREE_ID) {
+      setStatus('error')
+      return
+    }
+
+    setStatus('loading')
+
+    const data = Object.fromEntries(new FormData(e.currentTarget))
+
+    try {
+      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: JSON.stringify(data),
+      })
+
+      if (res.ok) {
+        setStatus('success')
+        formRef.current?.reset()
+      } else {
+        setStatus('error')
+      }
+    } catch {
+      setStatus('error')
+    }
+  }
 
   return (
-    <form ref={formRef} action={formAction} noValidate className="space-y-5">
-      {/* Success message */}
-      {state?.success && (
+    <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-5">
+      {status === 'success' && (
         <div
           role="status"
           aria-live="polite"
           className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800"
         >
-          {state.message}
+          Su mensaje fue enviado correctamente. Le responderemos a la brevedad.
         </div>
       )}
 
-      {/* General error */}
-      {state && !state.success && !state.fieldErrors && (
+      {status === 'error' && (
         <div
           role="alert"
           className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800"
         >
-          {state.error}
+          Ocurrió un error al enviar su mensaje. Intente nuevamente o escríbanos directamente.
         </div>
       )}
 
@@ -67,15 +85,7 @@ export function ContactForm() {
             type="text"
             autoComplete="name"
             required
-            aria-required="true"
-            aria-describedby={fieldError('nombre') ? 'nombre-error' : undefined}
-            className={cn(fieldError('nombre') && 'border-red-400 focus-visible:ring-red-400')}
           />
-          {fieldError('nombre') && (
-            <p id="nombre-error" role="alert" className="text-xs text-red-600">
-              {fieldError('nombre')}
-            </p>
-          )}
         </div>
 
         <div className="space-y-1.5">
@@ -88,15 +98,7 @@ export function ContactForm() {
             type="email"
             autoComplete="email"
             required
-            aria-required="true"
-            aria-describedby={fieldError('email') ? 'email-error' : undefined}
-            className={cn(fieldError('email') && 'border-red-400 focus-visible:ring-red-400')}
           />
-          {fieldError('email') && (
-            <p id="email-error" role="alert" className="text-xs text-red-600">
-              {fieldError('email')}
-            </p>
-          )}
         </div>
       </div>
 
@@ -120,28 +122,16 @@ export function ContactForm() {
             id="calidad"
             name="calidad"
             required
-            aria-required="true"
-            aria-describedby={fieldError('calidad') ? 'calidad-error' : undefined}
+            defaultValue=""
             className={cn(
               'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-              fieldError('calidad') && 'border-red-400 focus-visible:ring-red-400',
             )}
-            defaultValue=""
           >
-            <option value="" disabled>
-              Seleccione…
-            </option>
+            <option value="" disabled>Seleccione…</option>
             {CALIDADES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
+              <option key={c} value={c}>{c}</option>
             ))}
           </select>
-          {fieldError('calidad') && (
-            <p id="calidad-error" role="alert" className="text-xs text-red-600">
-              {fieldError('calidad')}
-            </p>
-          )}
         </div>
       </div>
 
@@ -154,19 +144,9 @@ export function ContactForm() {
           name="mensaje"
           rows={5}
           required
-          aria-required="true"
-          aria-describedby={fieldError('mensaje') ? 'mensaje-error' : undefined}
           placeholder="Descríbanos brevemente su causa o consulta…"
-          className={cn(
-            'resize-y',
-            fieldError('mensaje') && 'border-red-400 focus-visible:ring-red-400',
-          )}
+          className="resize-y"
         />
-        {fieldError('mensaje') && (
-          <p id="mensaje-error" role="alert" className="text-xs text-red-600">
-            {fieldError('mensaje')}
-          </p>
-        )}
       </div>
 
       <p className="text-xs text-navy-400">
@@ -179,10 +159,10 @@ export function ContactForm() {
 
       <Button
         type="submit"
-        disabled={isPending}
+        disabled={status === 'loading'}
         className="w-full sm:w-auto bg-navy-700 hover:bg-navy-800 text-white px-8"
       >
-        {isPending ? 'Enviando…' : 'Enviar mensaje'}
+        {status === 'loading' ? 'Enviando…' : 'Enviar mensaje'}
       </Button>
     </form>
   )
